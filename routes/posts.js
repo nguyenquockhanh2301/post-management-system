@@ -97,11 +97,12 @@ router.delete('/:id', async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    await post.remove();
+    await Post.deleteOne({ _id: req.params.id });
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 module.exports = router;
