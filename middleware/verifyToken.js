@@ -3,8 +3,12 @@ const jwt = require('jsonwebtoken');
 module.exports = (req, res, next) => {
   if (req.path.includes('/auth')) return next();
 
-  const token = req.headers.authorization;
-  if (!token) return res.status(403).json({ message: 'No token' });
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(403).json({ message: 'No token' });
+
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.split(' ')[1]
+    : authHeader;
 
   try {
     req.user = jwt.verify(token, process.env.JWT_SECRET);
