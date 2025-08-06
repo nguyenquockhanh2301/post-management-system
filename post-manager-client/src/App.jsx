@@ -6,29 +6,23 @@ import Register from './pages/Register';
 import PostList from './pages/PostList';
 import CreatePost from './pages/CreatePost';
 import Navbar from './components/Navbar';
+import PostDetail from './pages/PostDetail';
+
 
 // Simple helper to check auth
 const isLoggedIn = () => !!localStorage.getItem('token');
 
 const App = () => {
+  const token = localStorage.getItem('token');
   return (
     <Router>
-      {/* Navbar always rendered; it will show different items depending on auth */}
       <Navbar />
-
       <Routes>
-        {/* If user is logged in show PostList at / else redirect to /login */}
-        <Route path="/" element={isLoggedIn() ? <PostList /> : <Navigate to="/login" replace />} />
-
-        {/* Auth pages */}
+        <Route path="/" element={token ? <PostList /> : <Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
-        {/* Create protected */}
-        <Route path="/create" element={isLoggedIn() ? <CreatePost /> : <Navigate to="/login" replace />} />
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/create" element={token ? <CreatePost /> : <Navigate to="/login" />} />
+        <Route path="/posts/:id" element={isLoggedIn() ? <PostDetail /> : <Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
