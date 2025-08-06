@@ -1,30 +1,34 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-export default function Navbar(){
-  const token = localStorage.getItem('token');
+const Navbar = () => {
   const navigate = useNavigate();
-  const logout = () => { localStorage.removeItem('token'); navigate('/login'); };
+  const token = localStorage.getItem('token');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   return (
-    <header className="bg-white shadow-sm">
-      <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="text-xl font-bold">Post Manager</Link>
-        <nav>
-          {token ? (
-            <>
-              <Link to="/" className="mr-3">Home</Link>
-              <Link to="/create" className="mr-3">Create</Link>
-              <button onClick={logout} className="bg-red-500 text-white px-3 py-1 rounded">Logout</button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="mr-3">Login</Link>
-              <Link to="/register">Register</Link>
-            </>
-          )}
-        </nav>
-      </div>
-    </header>
+    <nav className="bg-gray-800 text-white px-6 py-3 flex justify-between items-center">
+      <h1 className="text-lg font-bold">
+        <Link to="/">Post Manager</Link>
+      </h1>
+      {token && (
+        <div className="flex gap-4 items-center">
+          <Link to="/">Home</Link>
+          <Link to="/create">Create</Link>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+    </nav>
   );
-}
+};
+
+export default Navbar;

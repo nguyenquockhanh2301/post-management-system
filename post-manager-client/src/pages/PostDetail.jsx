@@ -1,184 +1,114 @@
-// src/pages/PostDetail.jsx
 import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
 
-// API base (uses Vite env or fallback)
-const API_URL = import.meta.env.VITE_API_URL || 'https://post-management-system-production.up.railway.app';
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://post-management-system-production.up.railway.app';
 
-function authHeaders() {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+// Helper for correct image URL
+function thumbnailUrl(thumbnailPath) {
+  if (!thumbnailPath) return '';
+  if (/^https?:\/\//i.test(thumbnailPath)) {
+    return thumbnailPath;
+  }
+  return `${API_URL}/${thumbnailPath.replace(/^\/+/, '')}`;
 }
 
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState('');
-  const [thumbnailFile, setThumbnailFile] = useState(null);
-  const [error, setError] = useState(null);
 
+  // Fetch single post
   useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/posts/${id}`, { headers: authHeaders() });
-        setPost(res.data);
-        setTitle(res.data.title || '');
-        setContent(res.data.content || '');
-        setCategory(res.data.category || '');
-      } catch (err) {
-        console.error('Failed to load post', err);
-        setError('Failed to load post');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPost();
+    axios
+      .get(`${API_URL}/posts/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+      .then((res) => setPost(res.data))
+      .catch((err) => console.error('Error fetching post', err));
   }, [id]);
 
-  // Submit edit (multipart if thumbnail)
-  const handleSave = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      // If thumbnail file selected, send FormData
-      if (thumbnailFile) {
-        const form = new FormData();
-        form.append('title', title);
-        form.append('content', content);
-        form.append('category', category);
-        form.append('thumbnail', thumbnailFile);
-
-        await axios.put(`${API_URL}/posts/${id}`, form, {
-          headers: {
-            ...authHeaders(),
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-      } else {
-        // JSON update
-        await axios.put(`${API_URL}/posts/${id}`, { title, content, category }, {
-          headers: {
-            ...authHeaders(),
-            'Content-Type': 'application/json',
-          },
-        });
-      }
-
-      // Refresh post data
-      const res = await axios.get(`${API_URL}/posts/${id}`, { headers: authHeaders() });
-      setPost(res.data);
-      setEditing(false);
-    } catch (err) {
-      console.error('Update failed', err);
-      setError(err?.response?.data?.message || 'Update failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Delete post
   const handleDelete = async () => {
-    if (!window.confirm('Delete this post? This cannot be undone.')) return;
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+
     try {
-      await axios.delete(`${API_URL}/posts/${id}`, { headers: authHeaders() });
-      // after deletion go back home
+      await axios.delete(`${API_URL}/posts/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
       navigate('/');
     } catch (err) {
-      console.error('Delete failed', err);
-      setError(err?.response?.data?.message || 'Delete failed');
+      console.error('Error deleting post', err);
+      alert('Failed to delete post');
     }
   };
 
-  if (loading && !post) return <div className="p-4">Loading...</div>;
-  if (error && !post) return <div className="p-4 text-red-600">Error: {error}</div>;
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const title = prompt('Enter new title', post.title);
+    const content = prompt('Enter new content', post.content);
+    const category = prompt('Enter new category', post.category);
+
+    if (title && content && category) {
+      try {
+        const res = await axios.put(
+          `${API_URL}/posts/${id}`,
+          { title, content, category },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        );
+        setPost(res.data);
+      } catch (err) {
+        console.error('Error updating post', err);
+        alert('Failed to update post');
+      }
+    }
+  };
+
+  if (!post) {
+    return <p className="text-center mt-10">Loading post...</p>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-3xl mx-auto bg-white shadow rounded p-6">
-        <div className="flex items-start gap-4">
-          {post?.thumbnail && (
-            <img
-              src={/^https?:\/\//i.test(post.thumbnail) ? post.thumbnail : `${API_URL}/${post.thumbnail.replace(/^\/+/, '')}`}
-              alt={post.title}
-              className="w-40 h-40 object-cover rounded"
-            />
-          )}
+    <div className="max-w-3xl mx-auto p-6">
+      {post.thumbnail && (
+        <img
+          src={thumbnailUrl(post.thumbnail)}
+          alt={post.title}
+          className="w-full h-64 object-cover rounded mb-4"
+        />
+      )}
+      <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
+      <p className="text-sm text-gray-500 mb-4">{post.category}</p>
+      <p className="text-gray-800 mb-6">{post.content}</p>
 
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{post.title}</h1>
-            <p className="text-sm text-gray-500 mb-2">{post.category}</p>
-            <p className="text-gray-700 whitespace-pre-wrap">{post.content}</p>
-          </div>
-        </div>
-
-        <hr className="my-6" />
-
-        {/* Controls */}
-        {!editing ? (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setEditing(true)}
-              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-            >
-              Edit
-            </button>
-
-            <button
-              onClick={handleDelete}
-              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-            >
-              Delete
-            </button>
-
-            <button
-              onClick={() => navigate('/')}
-              className="ml-auto text-gray-600 hover:underline"
-            >
-              Back
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSave} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Title</label>
-              <input className="w-full p-2 border rounded" value={title} onChange={e => setTitle(e.target.value)} required />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium">Content</label>
-              <textarea className="w-full p-2 border rounded" value={content} onChange={e => setContent(e.target.value)} rows={6} required />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium">Category</label>
-              <input className="w-full p-2 border rounded" value={category} onChange={e => setCategory(e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium">Replace thumbnail (optional)</label>
-              <input type="file" accept="image/*" onChange={e => setThumbnailFile(e.target.files[0])} />
-            </div>
-
-            <div className="flex gap-2">
-              <button type="submit" disabled={loading} className="bg-green-600 text-white px-3 py-1 rounded">
-                Save
-              </button>
-
-              <button type="button" onClick={() => setEditing(false)} className="border px-3 py-1 rounded">
-                Cancel
-              </button>
-            </div>
-
-            {error && <p className="text-red-600">{error}</p>}
-          </form>
-        )}
+      <div className="flex gap-4">
+        <button
+          onClick={handleEdit}
+          className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+        >
+          Edit
+        </button>
+        <button
+          onClick={handleDelete}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+        >
+          Delete
+        </button>
+        <Link
+          to="/"
+          className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+        >
+          Back
+        </Link>
       </div>
     </div>
   );
