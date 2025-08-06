@@ -1,37 +1,38 @@
-// src/App.jsx
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import PostList from './pages/PostList';
-import CreatePost from './pages/CreatePost';
-import Navbar from './components/Navbar';
+// backend/app.js
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const authRoutes = require('./routes/auth');
+const postRoutes = require('./routes/posts');
+const logger = require('./middleware/logger');
+const verifyToken = require('./middleware/verifyToken');
 
-// Simple helper to check auth
-const isLoggedIn = () => !!localStorage.getItem('token');
+dotenv.config();
 
-const App = () => {
-  return (
-    <Router>
-      {/* Navbar always rendered; it will show different items depending on auth */}
-      <Navbar />
+const app = express();
 
-      <Routes>
-        {/* If user is logged in show PostList at / else redirect to /login */}
-        <Route path="/" element={isLoggedIn() ? <PostList /> : <Navigate to="/login" replace />} />
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
-        {/* Auth pages */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+// Middlewares
+app.use(cors());
+app.use(express.json());
+app.use(logger);
+app.use('/uploads', express.static('uploads'));
 
-        {/* Create protected */}
-        <Route path="/create" element={isLoggedIn() ? <CreatePost /> : <Navigate to="/login" replace />} />
+// Routes
+app.use('/auth', authRoutes);
+app.use('/posts', verifyToken, postRoutes);
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
-  );
-};
+// Handle unknown routes
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
-export default App;
+module.exports = app;
