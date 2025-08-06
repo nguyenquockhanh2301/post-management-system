@@ -1,77 +1,37 @@
-// app.js
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
-const path = require('path');
-const fs = require('fs');
+// src/App.jsx
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import PostList from './pages/PostList';
+import CreatePost from './pages/CreatePost';
+import Navbar from './components/Navbar';
 
-const authRoutes = require('./routes/auth');
-const postRoutes = require('./routes/posts');
-const logger = require('./middleware/logger');
-const verifyToken = require('./middleware/verifyToken');
+// Simple helper to check auth
+const isLoggedIn = () => !!localStorage.getItem('token');
 
-dotenv.config();
+const App = () => {
+  return (
+    <Router>
+      {/* Navbar always rendered; it will show different items depending on auth */}
+      <Navbar />
 
-const app = express();
+      <Routes>
+        {/* If user is logged in show PostList at / else redirect to /login */}
+        <Route path="/" element={isLoggedIn() ? <PostList /> : <Navigate to="/login" replace />} />
 
-// === Connect to MongoDB ===
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+        {/* Auth pages */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
-app.use(logger);
+        {/* Create protected */}
+        <Route path="/create" element={isLoggedIn() ? <CreatePost /> : <Navigate to="/login" replace />} />
 
-// === Serve uploaded images from absolute path ===
-// compute uploads directory path relative to this file (guaranteed correct)
-const uploadsDir = path.join(__dirname, 'uploads');
-console.log('Uploads directory resolved to:', uploadsDir);
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
+  );
+};
 
-// Make sure uploads directory exists (optional; helpful for local dev)
-if (!fs.existsSync(uploadsDir)) {
-  console.log('Uploads directory does not exist, creating:', uploadsDir);
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// IMPORTANT: register static serving BEFORE other routes so it won't be intercepted
-app.use('/uploads', express.static(uploadsDir));
-
-// ---------------------- DEBUG ROUTES (temporary) ----------------------
-// List files inside uploads folder (for debugging only).
-// Remove this endpoint once you finish debugging.
-app.get('/debug/uploads', (req, res) => {
-  fs.readdir(uploadsDir, (err, files) => {
-    if (err) {
-      console.error('Error reading uploads dir:', err);
-      return res.status(500).json({ error: 'Cannot read uploads directory', details: err.message });
-    }
-    // Return filenames and file sizes (optional)
-    const result = files.map((fname) => {
-      try {
-        const stat = fs.statSync(path.join(uploadsDir, fname));
-        return { name: fname, size: stat.size, mtime: stat.mtime };
-      } catch (e) {
-        return { name: fname, error: e.message };
-      }
-    });
-    res.json(result);
-  });
-});
-// ---------------------------------------------------------------------
-
-// Mount routes (after static)
-app.use('/auth', authRoutes);
-app.use('/posts', verifyToken, postRoutes); // keep protected as you had
-
-// 404
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
-
-module.exports = app;
+export default App;
