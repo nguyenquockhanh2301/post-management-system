@@ -24,28 +24,7 @@ A simple full-stack application for creating, viewing, editing, and deleting pos
 
 ---
 
-## 📂 Project Structure
-
-project-root/
-│
-├── app.js
-├── server.js
-├── routes/
-├── models/
-├── middleware/
-├── uploads/ # Uploaded thumbnails
-├── package.json
-├── .env
-│
-├── post-manager-client/ # React frontend (Vite)
-│ ├── src/
-│ ├── public/
-│ ├── package.json
-│ └── .env
-│
-└── README.md
-
-## Backend Setup
+## ⚙️ Backend Setup
 - Install dependencies
 cd backend
 npm install
@@ -58,7 +37,7 @@ JWT_SECRET=some_secret_key_here
 - Run server
 npm run dev
 
-## Frontend Setup
+## 🎨 Frontend Setup
 - Install dependencies
 cd post-manager-client
 npm install
@@ -71,7 +50,7 @@ npm run dev
 
 - Open http://localhost:5173 in your browser.
 
-## Usage
+## 🔑 Usage
 # Register & Login
 - Go to /register to create an account.
 - Go to /login to sign in.
@@ -83,7 +62,7 @@ npm run dev
 - Edit Post: In the detail page, click "Edit" and update details.
 - Delete Post: In the detail page, click "Delete" (only available if you are the author).
 
-##  API Endpoints (Backend)
+## 📡 API Endpoints (Backend)
 # Auth
 - POST /auth/register → Register new user ({ username, password })
 - POST /auth/login → Login ({ username, password })
@@ -95,12 +74,12 @@ npm run dev
 - PUT /posts/:id → Update post (auth required, multipart or JSON)
 -   DELETE /posts/:id → Delete post (auth required)
 
-##  Image Upload Notes
+## 🖼 Image Upload Notes
 - Supported formats: .jpg, .jpeg, .png
 - Max file size: 2 MB
 - Files are stored in the uploads/ folder on the backend
 
-## Deployment Notes
+## 🛠 Deployment Notes
 - Deploy backend (Express) to Railway, Render, or Heroku.
 - Deploy frontend (Vite React) to Vercel or Netlify.
 - Set correct API URL in post-manager-client/.env (VITE_API_URL).
